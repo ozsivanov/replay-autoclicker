@@ -1,0 +1,11 @@
+{
+  "name": "replay-autoclicker",
+  "author": "ozsivanov",
+  "version": "0.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "gkm": "^0.1.0",
+    "robotjs": "^0.4.7"
+  }
+}
