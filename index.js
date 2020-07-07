@@ -3,7 +3,7 @@ const gkm = require('gkm');
 const robot = require('robotjs');
 const util = require('util');
 
-const OUTPUT_FOLDER= 'output';
+const OUTPUT_FOLDER = 'output';
 const FILE_NAME = 'recording.json';
 const RANDOMIZE_OFFSET_MAX = 4;
 
@@ -35,7 +35,7 @@ class Event {
   }
 }
 
-function getRandomOffset(){
+function getRandomOffset() {
   const randomOffset = Math.floor(Math.random() * RANDOMIZE_OFFSET_MAX);
   return randomOffset * (Math.floor(Math.random() * 2) == 1 ? 1 : -1); // Randomize positive / negative
 }
@@ -55,16 +55,16 @@ async function playBack(inputIndex) {
         try {
           robot.keyTap(input.key.toLowerCase());
           console.log(`Key Tap: ${input.key}`);
-        } catch (ex) {
+        } catch {
           console.log(`Invalid Key: ${input.key} - Skipping`);
         }
       } else if (input.eventType === EventType.MOUSE) {
         const xPos = input.mousePos.x + getRandomOffset(),
-          yPos =  input.mousePos.y + getRandomOffset();
+          yPos = input.mousePos.y + getRandomOffset();
 
         robot.moveMouseSmooth(xPos, yPos);
         robot.mouseClick(MouseKey[Number(input.key) - 1]);
-        console.log(`Click: ${xPos}, ${yPos}`)
+        console.log(`Click: ${xPos}, ${yPos}`);
       }
       if (inputIndex < recording.length - 1) {
         playBack(++inputIndex);
@@ -81,19 +81,19 @@ async function loadRecording() {
       recording = await readFile(`${OUTPUT_FOLDER}/${FILE_NAME}`, { encoding: 'utf8' });
 
     return JSON.parse(recording);
-  } catch (_) {
+  } catch {
     console.log(`ERROR - Failed to parse recording file. Ensure that it is valid JSON.`);
     return [];
   }
- }
+}
 
 async function saveRecording(recording) {
- const writeFile = util.promisify(fs.writeFile);
- const error = await writeFile(`${OUTPUT_FOLDER}/${FILE_NAME}`, JSON.stringify(recording));
- if (error) {
-   return error;
- }
- console.log(`Recording saved successfully as '${FILE_NAME}'`);
+  const writeFile = util.promisify(fs.writeFile);
+  const error = await writeFile(`${OUTPUT_FOLDER}/${FILE_NAME}`, JSON.stringify(recording));
+  if (error) {
+    return error;
+  }
+  console.log(`Recording saved successfully as '${FILE_NAME}'`);
 }
 
 gkm.events.on('mouse.pressed', event => {
@@ -113,12 +113,14 @@ gkm.events.on('key.released', async event => {
     state = State.STANDBY;
     return;
   }
+
   if (event[0] === StateKey.LOAD && state === State.STANDBY) {
     recording = await loadRecording();
     if (Array.isArray(recording) && recording.length > 0) {
       console.log('Successfully loaded recording.');
     }
   }
+
   if (event[0] === StateKey.RECORD && state === State.STANDBY) {
     state = State.RECORD;
     recording = [];
