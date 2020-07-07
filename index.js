@@ -5,6 +5,7 @@ const util = require('util');
 
 const OUTPUT_FOLDER= 'output';
 const FILE_NAME = 'recording.json';
+const RANDOMIZE_OFFSET_MAX = 4;
 
 const State = Object.freeze({
   RECORD: 'RECORD',
@@ -34,6 +35,11 @@ class Event {
   }
 }
 
+function getRandomOffset(){
+  const randomOffset = Math.floor(Math.random() * RANDOMIZE_OFFSET_MAX);
+  return randomOffset * (Math.floor(Math.random() * 2) == 1 ? 1 : -1); // Randomize positive / negative
+}
+
 let state = State.STANDBY;
 let recording = [];
 let lastInputTime = null;
@@ -41,6 +47,10 @@ async function playBack(inputIndex) {
   if (state === State.REPLAY) {
     const input = recording[inputIndex];
     setTimeout(() => {
+      if (state === State.STANDBY) {
+        return;
+      }
+
       if (input.eventType === EventType.KEYBOARD) {
         try {
           robot.keyTap(input.key.toLowerCase());
@@ -49,9 +59,12 @@ async function playBack(inputIndex) {
           console.log(`Invalid Key: ${input.key} - Skipping`);
         }
       } else if (input.eventType === EventType.MOUSE) {
-        robot.moveMouseSmooth(input.mousePos.x, input.mousePos.y);
+        const xPos = input.mousePos.x + getRandomOffset(),
+          yPos =  input.mousePos.y + getRandomOffset();
+
+        robot.moveMouseSmooth(xPos, yPos);
         robot.mouseClick(MouseKey[Number(input.key) - 1]);
-        console.log(`Click: ${input.mousePos.x}, ${input.mousePos.y}`)
+        console.log(`Click: ${xPos}, ${yPos}`)
       }
       if (inputIndex < recording.length - 1) {
         playBack(++inputIndex);
@@ -86,8 +99,10 @@ async function saveRecording(recording) {
 gkm.events.on('mouse.pressed', event => {
   if (state === State.RECORD) {
     currentTime = new Date().getTime();
-    recording.push(new Event(EventType.MOUSE, event, currentTime - lastInputTime, robot.getMousePos()));
+    const mousePos = robot.getMousePos();
+    recording.push(new Event(EventType.MOUSE, event, currentTime - lastInputTime, mousePos));
     lastInputTime = currentTime;
+    console.log(`Recorded click at (${mousePos.x}, ${mousePos.y})`);
   }
 });
 
@@ -121,11 +136,3 @@ gkm.events.on('key.released', async event => {
     playBack(0);
   }
 });
-
-// gkm.events.on('key.pressed', event => {
-//   if (state === State.RECORD && !Object.keys(StateKey).includes(event[0])) {
-//     currentTime = new Date().getTime();
-//     recording.push(new Event(EventType.KEYBOARD, event[0], currentTime - lastInputTime));
-//     lastInputTime = currentTime;
-//   }
-// });
